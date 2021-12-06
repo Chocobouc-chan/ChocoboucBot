@@ -5,5 +5,8 @@
     "node-fetch": "^3.1.0",
     "tmi.js": "^1.8.5"
   },
-  "type": "module"
+  "type": "module",
+  "scripts": {
+    "start": "node --experimental-json-modules app.js"
+  }
 }
