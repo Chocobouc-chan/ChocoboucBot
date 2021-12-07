@@ -1,10 +1,10 @@
 import fetch from "node-fetch";
 import dotenv from "dotenv";
 import fs from "node:fs/promises";
-const tokenFileName = "./token.json";
 import tokenFile from "./token.json"
 
 dotenv.config();
+const tokenFileName = "./token.json";
 
 const opts = {
   method: "GET",
@@ -48,7 +48,8 @@ const handleError = (error) => {
 const get = async (url, body = {}) => {
   try {
     await validateToken();
-    return await fetch(url, opts).json().data;
+    const response = await fetch(url, opts);
+    return await response.json()
   } catch (error) {
     handleError(error);
   }

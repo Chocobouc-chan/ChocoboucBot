@@ -2,7 +2,10 @@ import tmi from "tmi.js";
 import dotenv from "dotenv";
 import { getChannelFromId, getUsersFromLogins } from "./service.js";
 import constants from "./constant.js";
+import OBSWebSocket from "obs-websocket-js";
 
+const obs = new OBSWebSocket();
+obs.connect({ address: "localhost:4444", password: process.env.OBS_PASSWORD });
 dotenv.config();
 
 // Define configuration **options
@@ -40,27 +43,50 @@ const onMessageHandler = (channel, tags, message, self) => {
     case "so":
       so(channel, args[0]);
       break;
+    case "meme":
+      meme();
+      break;
     default:
       break;
   }
 };
 
+const meme = () => {
+  obs.send("SetBrowserSourceProperties", {
+    source: "meme",
+    is_local_file: true,
+    local_file: "C:/Users/choco/Desktop/memes/incognitobnoby.webp",
+    shutdown: true,
+    render: true,
+  });
+  obs.send("SetSceneItemProperties", {
+    item: "meme",
+    visible: true,
+  })
+  setTimeout(
+    () =>
+      obs.send("SetSceneItemProperties", {
+        item: "meme",
+        visible: false,
+      }),
+    5000
+  );
+};
+
 const so = async (channel, username) => {
   const { so1, so2, soLett1, soLett2, soLett3, noIdea } = constants;
   const responseFromGetUserId = await getUsersFromLogins([username]);
-  const jsonUserId = await responseFromGetUserId.json();
   const responseFromGetChannelId = await getChannelFromId(
-    jsonUserId.data[0].id
+    responseFromGetUserId.data[0].id
   );
-  const jsonChannelId = await responseFromGetChannelId.json();
-  const lastPlayedGame = jsonChannelId.data[0].game_name
-    ? jsonChannelId.data[0].game_name
+  const lastPlayedGame = responseFromGetChannelId.data[0].game_name
+    ? responseFromGetChannelId.data[0].game_name
     : noIdea;
   if (username.toLowerCase() === "lettwave") {
     client.say(
       channel,
       soLett1 +
-        jsonUserId.data[0].display_name +
+        responseFromGetUserId.data[0].display_name +
         soLett2 +
         lastPlayedGame +
         soLett3
@@ -68,7 +94,7 @@ const so = async (channel, username) => {
   } else {
     client.say(
       channel,
-      so1 + jsonUserId.data[0].display_name + so2 + lastPlayedGame
+      so1 + responseFromGetUserId.data[0].display_name + so2 + lastPlayedGame
     );
   }
 };
