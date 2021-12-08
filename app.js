@@ -1,27 +1,14 @@
-import tmi from "tmi.js";
-import dotenv from "dotenv";
 import { getChannelFromId, getUsersFromLogins } from "./service.js";
 import constants from "./constant.js";
-import OBSWebSocket from "obs-websocket-js";
+import * as fs from "fs";
+import * as utils from "./utils.js"
 
-const obs = new OBSWebSocket();
-obs.connect({ address: "localhost:4444", password: process.env.OBS_PASSWORD });
-dotenv.config();
+const obs = utils.connectObs()
+const client = utils.connectToTwitch()
 
-// Define configuration **options
-const opts = {
-  identity: {
-    username: process.env.USERNAME,
-    password: process.env.PASSWORD,
-  },
-  channels: ["chocoboucstream"],
-};
-
-// Create a client with our options
-const client = new tmi.client(opts);
-
-// Connect to Twitch:
-client.connect();
+const memeFolder="C:/Users/choco/Desktop/memes/"
+const excludedFileExtensions = ["webm", "mp4", "html"];
+const alreadySeenThisMeme = []
 
 // Called every time a message comes in
 const onMessageHandler = (channel, tags, message, self) => {
@@ -37,39 +24,50 @@ const onMessageHandler = (channel, tags, message, self) => {
   let [command, ...args] = message.slice(PREFIX.length).split(/ +/g);
   // If the command is known, let's execute it
   switch (command) {
-    case "test":
-      client.say(channel, `test ${tags["display-name"]}`);
-      break;
     case "so":
       so(channel, args[0]);
       break;
     case "meme":
-      meme();
+    case "cope":
+    case "mood":
+      displayMeme(memeFolder+command);
       break;
     default:
       break;
   }
 };
 
-const meme = () => {
+const getFileNames = (folder) => {
+  const files = fs.readdirSync(folder);
+  const excludedFiles = [excludedFileExtensions, ...alreadySeenThisMeme]
+  return files.filter(
+    (fileName) =>
+      !excludedFiles.some(exclude => fileName.includes(exclude))
+  );
+};
+
+const displayMeme = (path) => {
+  const memes = getFileNames(path);
+  const meme = memes[utils.getRandomInt(memes.length)];
+  alreadySeenThisMeme.push(meme)
   obs.send("SetBrowserSourceProperties", {
     source: "meme",
     is_local_file: true,
-    local_file: "C:/Users/choco/Desktop/memes/incognitobnoby.webp",
+    local_file: `${path}/${meme}`,
     shutdown: true,
     render: true,
   });
   obs.send("SetSceneItemProperties", {
     item: "meme",
     visible: true,
-  })
+  });
   setTimeout(
     () =>
       obs.send("SetSceneItemProperties", {
         item: "meme",
         visible: false,
       }),
-    5000
+    8000
   );
 };
 
